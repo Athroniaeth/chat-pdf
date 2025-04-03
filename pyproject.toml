@@ -1,0 +1,31 @@
+[project]
+name = "rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Athroniaeth", email = "pierre.chaumont@hotmail.fr" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.115.12",
+    "loguru>=0.7.3",
+    "pytest-asyncio>=0.26.0",
+    "python-dotenv>=1.1.0",
+    "typer>=0.15.2",
+]
+
+[project.scripts]
+cli = "rag:cli"
+lint = "rag:lint"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.0",
+    "ruff>=0.11.2",
+]

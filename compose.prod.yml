@@ -1,0 +1,23 @@
+services:
+  rag:
+    # Build the image from the Dockerfile in the current directory
+    build: .
+    env_file: .env
+    container_name: rag
+    command: "uv run src/rag run --host ${HOST} --port ${PORT}"
+    # Host the FastAPI application on port 8000
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    restart: unless-stopped
+    networks:
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rag.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.rag.entrypoints=websecure"
+      - "traefik.http.routers.rag.tls.certresolver=myresolver"
+      - "traefik.http.services.rag.loadbalancer.server.port=${PORT}"
+
+networks:
+  traefik-network:
+    external: true
