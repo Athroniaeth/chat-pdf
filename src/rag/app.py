@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 
+from chainlit.utils import mount_chainlit
 from fastapi import FastAPI
 from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
-from rag import get_version, Version
+from rag import get_version, STATIC_PATH
 from rag.routes import router
 
 
@@ -38,7 +40,13 @@ def create_app(
         allow_headers=["*"],
     )
 
+    # Add static files
+    app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+
     # Add routes for the API
     app.include_router(router=router)
+
+    # Mount Chainlit application
+    mount_chainlit(app=app, target="src/rag/interface.py", path="/")
 
     return app

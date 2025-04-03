@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "chainlit>=2.4.400",
     "fastapi[standard]>=0.115.12",
     "loguru>=0.7.3",
     "pytest-asyncio>=0.26.0",

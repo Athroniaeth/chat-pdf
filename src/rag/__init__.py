@@ -52,3 +52,4 @@ def cli():
 
 # Global variables of the project
 PROJECT_PATH = Path(__file__).parents[2]
+STATIC_PATH = PROJECT_PATH / "static"
