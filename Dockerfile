@@ -2,10 +2,7 @@ FROM python:3.12-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install the system dependencies
-RUN apt-get update && \
-    # Install nodejs for frontend
-    apt-get install -y nodejs npm \
-    curl nano # Install for debugging / manual editing
+RUN apt-get update
 
 # Set the working directory
 WORKDIR /app
@@ -22,18 +19,9 @@ RUN touch /app/src/rag/__init__.py
 # Sync the Python dependencies
 RUN uv sync --frozen --all-extras  --no-dev
 
-# Add the frontend files
-COPY ./front /app/front
-
-# Build the frontend
-RUN npm install --prefix /app/front
-RUN npm run build --prefix /app/front
-
-# Add the backend files
+# Add the api and static files
 COPY ./src /app/src/
-
-# Copy config files
-COPY ./config.toml /app/config.toml
+COPY ./static /app/static/
 
 # Expose the port
 EXPOSE 8000

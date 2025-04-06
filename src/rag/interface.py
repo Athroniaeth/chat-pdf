@@ -1,11 +1,29 @@
+import os
+from typing import Dict, Optional
+
 import chainlit as cl
 from chainlit.types import ThreadDict
 from fastapi import Request, Response
-
+from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 
 from chainlit.input_widget import Select, Switch, Slider
+from uuid import uuid4
 
-settings = None
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL", "postgresql+asyncpg://chainlit:chainlitpassword@localhost:5432/chainlitdb"
+)
+
+
+@cl.data_layer
+def get_data_layer():
+    return SQLAlchemyDataLayer(conninfo=DATABASE_URL)
+
+
+@cl.header_auth_callback
+def header_auth_callback(headers: Dict) -> Optional[cl.User]:
+    random_user = uuid4()
+    return cl.User(identifier=f"{random_user}", metadata={"role": "user", "provider": "header"})
+
 
 @cl.on_chat_start
 async def on_chat_start():

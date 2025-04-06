@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: chainlit
+      POSTGRES_PASSWORD: chainlitpassword
+      POSTGRES_DB: chainlitdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U chainlit -d chainlitdb" ]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
   rag:
     # Build the image from the Dockerfile in the current directory
     build: .

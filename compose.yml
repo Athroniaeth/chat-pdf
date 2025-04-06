@@ -1,12 +1,34 @@
 services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: chainlit
+      POSTGRES_PASSWORD: chainlitpassword
+      POSTGRES_DB: chainlitdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U chainlit -d chainlitdb" ]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
   rag:
     # Build the image from the Dockerfile in the current directory
     build: .
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://chainlit:chainlitpassword@postgres:5432/chainlitdb
     command: "uv run src/rag run --host ${HOST} --port ${PORT}"
     # Host the FastAPI application on port 8000
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
+    depends_on:
+      postgres:
+        condition: service_healthy
     develop:
       # Create a `watch` configuration to update the app
       # https://docs.docker.com/compose/file-watch/#compose-watch-versus-bind-mounts
@@ -23,3 +45,6 @@ services:
         # Rebuild the image if dependencies change by checking uv.lock
         - action: rebuild
           path: ./uv.lock
+
+volumes:
+  postgres_data:

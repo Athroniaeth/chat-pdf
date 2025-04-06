@@ -8,11 +8,17 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "aiohttp>=3.11.16",
+    "asyncpg>=0.30.0",
+    "azure-identity>=1.21.0",
+    "azure-storage-file-datalake>=12.20.0",
     "chainlit>=2.4.400",
     "fastapi[standard]>=0.115.12",
+    "greenlet>=3.1.1",
     "loguru>=0.7.3",
     "pytest-asyncio>=0.26.0",
     "python-dotenv>=1.1.0",
+    "sqlalchemy>=2.0.40",
     "typer>=0.15.2",
 ]
 
