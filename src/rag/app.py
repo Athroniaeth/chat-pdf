@@ -41,7 +41,7 @@ def create_app(
     )
 
     # Add static files
-    app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+    app.mount("/public", StaticFiles(directory=STATIC_PATH), name="static")
 
     # Add routes for the API
     app.include_router(router=router)

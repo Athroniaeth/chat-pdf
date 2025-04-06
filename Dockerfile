@@ -21,7 +21,8 @@ RUN uv sync --frozen --all-extras  --no-dev
 
 # Add the api and static files
 COPY ./src /app/src/
-COPY ./static /app/static/
+COPY public /app/public/
+COPY .chainlit /app/.chainlit/
 
 # Expose the port
 EXPOSE 8000

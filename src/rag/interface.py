@@ -126,22 +126,22 @@ async def set_starters():
         cl.Starter(
             label="Morning routine ideation",
             message="Can you help me create a personalized morning routine that would help increase my productivity throughout the day? Start by asking me about my current habits and what activities energize me in the morning.",
-            icon="/static/idea.svg",
+            icon="/public/idea.svg",
         ),
         cl.Starter(
             label="Explain superconductors",
             message="Explain superconductors like I'm five years old.",
-            icon="/static/cart.svg",
+            icon="/public/cart.svg",
         ),
         cl.Starter(
             label="Python script for daily email reports",
             message="Write a script to automate sending daily email reports in Python, and walk me through how I would set it up.",
-            icon="/static/drug.svg",
+            icon="/public/drug.svg",
         ),
         cl.Starter(
             label="Text inviting friend to wedding",
             message="Write a text asking a friend to be my plus-one at a wedding next month. I want to keep it super short and casual, and offer an out.",
-            icon="/static/paper_airplane.svg",
+            icon="/public/paper_airplane.svg",
         ),
     ]
 

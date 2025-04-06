@@ -8,11 +8,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./data/db:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U chainlit -d chainlitdb" ]
-      interval: 1s
+      interval: 2s
       timeout: 5s
       retries: 10
 
@@ -45,6 +45,3 @@ services:
         # Rebuild the image if dependencies change by checking uv.lock
         - action: rebuild
           path: ./uv.lock
-
-volumes:
-  postgres_data:
