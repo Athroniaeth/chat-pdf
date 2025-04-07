@@ -1,13 +1,14 @@
 import os
 from typing import Dict, Optional
+from uuid import uuid4
 
 import chainlit as cl
+from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from chainlit.types import ThreadDict
 from fastapi import Request, Response
-from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from pypdf import PdfReader
 
-from chainlit.input_widget import Select, Switch, Slider
-from uuid import uuid4
+from rag.pipeline import create_session_retriever, run_stream
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql+asyncpg://chainlit:chainlitpassword@localhost:5432/chainlitdb"
@@ -27,67 +28,46 @@ def header_auth_callback(headers: Dict) -> Optional[cl.User]:
 
 @cl.on_chat_start
 async def on_chat_start():
-    settings = await cl.ChatSettings(
-        [
-            Select(
-                id="Model",
-                label="OpenAI - Model",
-                values=["gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-4", "gpt-4-32k"],
-                initial_index=0,
-            ),
-            Switch(id="Streaming", label="OpenAI - Stream Tokens", initial=True),
-            Slider(
-                id="Temperature",
-                label="OpenAI - Temperature",
-                initial=1,
-                min=0,
-                max=2,
-                step=0.1,
-            ),
-            Slider(
-                id="SAI_Steps",
-                label="Stability AI - Steps",
-                initial=30,
-                min=10,
-                max=150,
-                step=1,
-                description="Amount of inference steps performed on image generation.",
-            ),
-            Slider(
-                id="SAI_Cfg_Scale",
-                label="Stability AI - Cfg_Scale",
-                initial=7,
-                min=1,
-                max=35,
-                step=0.1,
-                description="Influences how strongly your generation is guided to match your prompt.",
-            ),
-            Slider(
-                id="SAI_Width",
-                label="Stability AI - Image Width",
-                initial=512,
-                min=256,
-                max=2048,
-                step=64,
-                tooltip="Measured in pixels",
-            ),
-            Slider(
-                id="SAI_Height",
-                label="Stability AI - Image Height",
-                initial=512,
-                min=256,
-                max=2048,
-                step=64,
-                tooltip="Measured in pixels",
-            ),
-        ]
+    files = None
+
+    # Wait for the user to upload a file
+    while files is None:
+        files = await cl.AskFileMessage(
+            content="Please upload a text file to begin!",
+            # accept PDF files
+            accept=["text/plain", "application/pdf"],
+            timeout=3600,
+        ).send()
+
+    text_file = files[0]
+    
+    text = ""
+    pdf = PdfReader(text_file.path)
+    
+    for page in pdf.pages:
+        text += page.extract_text()
+
+    identifier = cl.context.session.user.identifier
+    await create_session_retriever(client=identifier, filepath=text_file.path)
+
+    # Let the user know that the system is ready
+    await cl.Message(
+        content=f"`{text_file.name}` uploaded, it contains {len(text)} characters!"
     ).send()
 
 
 @cl.on_message
 async def on_message(msg: cl.Message):
     print("The user sent: ", msg.content)
-    return await cl.Message(content=msg.content).send()
+    identifier = cl.context.session.user.identifier
+    
+    assistant_msg = cl.Message(content="")
+
+    async for part in run_stream(client=identifier, query=msg.content):
+        if token := part or "":
+            await assistant_msg.stream_token(token)
+
+    await assistant_msg.update()
 
 
 @cl.on_stop
@@ -108,7 +88,8 @@ def on_logout(request: Request, response: Response):
 
 @cl.set_chat_profiles
 async def chat_profile():
-    return [
+    ...
+    """return [
         cl.ChatProfile(
             name="GPT-3.5",
             markdown_description="The underlying LLM model is **GPT-3.5**.",
@@ -117,7 +98,7 @@ async def chat_profile():
             name="GPT-4",
             markdown_description="The underlying LLM model is **GPT-4**.",
         ),
-    ]
+    ]"""
 
 
 @cl.set_starters

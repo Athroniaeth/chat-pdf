@@ -15,11 +15,16 @@ dependencies = [
     "chainlit>=2.4.400",
     "fastapi[standard]>=0.115.12",
     "greenlet>=3.1.1",
+    "langchain-community>=0.3.21",
+    "langchain>=0.3.23",
     "loguru>=0.7.3",
     "pytest-asyncio>=0.26.0",
     "python-dotenv>=1.1.0",
     "sqlalchemy>=2.0.40",
     "typer>=0.15.2",
+    "langchain-openai>=0.3.12",
+    "pypdf>=5.4.0",
+    "faiss-cpu>=1.10.0",
 ]
 
 [project.scripts]
