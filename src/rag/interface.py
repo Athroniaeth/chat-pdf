@@ -11,7 +11,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from loguru import logger
 from multipart import file_path
 from pypdf import PdfReader
-
+import asyncio
 from rag.pipeline import create_session_retriever, run_stream
 
 DATABASE_URL = os.environ.get(
@@ -44,10 +44,10 @@ async def on_chat_start():
         ).send()
 
     text_file = files[0]
-    
+
     text = ""
     pdf = PdfReader(text_file.path)
-    
+
     for page in pdf.pages:
         text += page.extract_text()
 
@@ -60,41 +60,33 @@ async def on_chat_start():
     ).send()"""
 
 
+@cl.step(type="run", name="Transform PDF to documents", show_input=False)
+async def pdf_to_docs(file: file_path):
+    """Parse a PDF file and return its contents."""
+    pdf_reader = PyPDFLoader(file.path)
+    docs = await pdf_reader.aload()
+    return docs
+
+
+@cl.step(type="tool", name="PDF parser tool", show_input=False)
 async def create_retriever_from_pdfs(user: str, elements: List[Element]):
     """Upload a PDF file to the server."""
-    docs = []
     pdf_files = [elem for elem in elements if elem.mime == "application/pdf"]
-    pdf_readers = (PyPDFLoader(file.path) for file in pdf_files)
-
-    message = "You have uploaded the following files:"
-    assistant_msg = cl.Message(content=message)
-    await assistant_msg.send()
-
-    for file, pdf_reader in zip(pdf_files, pdf_readers):
-        file_docs = await pdf_reader.aload()
-        length = sum(len(doc.page_content) for doc in file_docs)
-        message = f"\n- {file.name} ({file.size} bytes, {length} characters)"
-        await assistant_msg.stream_token(message)
-
-        docs.extend(file_docs)
-
-    message = (
-        f"\n\nThe documents have been successfully uploaded "
-        f"and indexed. You can now ask questions about "
-        f"the content of the files."
-    )
+    docs = [pdf_to_docs(file) for file in pdf_files]
+    docs = await asyncio.gather(*docs)
+    # Flatten the list of lists into a single list
+    docs = [doc for doc_list in docs for doc in doc_list]
     await create_session_retriever(user, docs)
-    await assistant_msg.stream_token(message)
 
 
 @cl.on_message
 async def on_message(msg: cl.Message):
     logger.info(f"Received message: {msg.content}")
     identifier = cl.context.session.user.identifier
-    
+
     if msg.elements:
         await create_retriever_from_pdfs(identifier, msg.elements)
-    
+
     assistant_msg = cl.Message(content="")
 
     async for part in run_stream(client=identifier, query=msg.content):

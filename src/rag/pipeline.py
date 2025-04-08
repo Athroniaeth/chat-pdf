@@ -1,5 +1,5 @@
 import uuid
-from typing import Sequence, List, AsyncIterable
+from typing import Sequence, List, AsyncIterable, Optional
 
 from dotenv import load_dotenv
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -74,12 +74,12 @@ def _get_or_create_session_history(client: str) -> BaseChatMessageHistory:
     return stores_history.get(client, ChatMessageHistory())
 
 
-def _get_session_retriever(client: str) -> VectorStoreRetriever:
+def _get_session_retriever(client: str) -> Optional[VectorStoreRetriever]:
     global stores_retriever
     retriever = stores_retriever.get(client)
 
     if retriever is None:
-        raise ValueError(f"Client {client} not found in stores.")
+        return None
 
     return retriever
 
@@ -174,10 +174,13 @@ async def run_stream(client: str, query: str) -> AsyncIterable[str]:
     query = await preprocess_query.ainvoke(query)
 
     # Get the relevant documents
-    docs = await retriever.ainvoke(query)
+    if retriever:
+        docs = await retriever.ainvoke(query)
 
-    # Format the documents
-    context = _format_docs(docs)
+        # Format the documents
+        context = _format_docs(docs)
+    else:
+        context = "<NO CONTEXT>"
 
     # Update the history with the new query
     message = HumanMessage(content=query)
