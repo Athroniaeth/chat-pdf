@@ -1,11 +1,15 @@
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from uuid import uuid4
 
 import chainlit as cl
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from chainlit.element import Element
 from chainlit.types import ThreadDict
 from fastapi import Request, Response
+from langchain_community.document_loaders import PyPDFLoader
+from loguru import logger
+from multipart import file_path
 from pypdf import PdfReader
 
 from rag.pipeline import create_session_retriever, run_stream
@@ -28,7 +32,7 @@ def header_auth_callback(headers: Dict) -> Optional[cl.User]:
 
 @cl.on_chat_start
 async def on_chat_start():
-    files = None
+    """files = None
 
     # Wait for the user to upload a file
     while files is None:
@@ -53,13 +57,43 @@ async def on_chat_start():
     # Let the user know that the system is ready
     await cl.Message(
         content=f"`{text_file.name}` uploaded, it contains {len(text)} characters!"
-    ).send()
+    ).send()"""
+
+
+async def create_retriever_from_pdfs(user: str, elements: List[Element]):
+    """Upload a PDF file to the server."""
+    docs = []
+    pdf_files = [elem for elem in elements if elem.mime == "application/pdf"]
+    pdf_readers = (PyPDFLoader(file.path) for file in pdf_files)
+
+    message = "You have uploaded the following files:"
+    assistant_msg = cl.Message(content=message)
+    await assistant_msg.send()
+
+    for file, pdf_reader in zip(pdf_files, pdf_readers):
+        file_docs = await pdf_reader.aload()
+        length = sum(len(doc.page_content) for doc in file_docs)
+        message = f"\n- {file.name} ({file.size} bytes, {length} characters)"
+        await assistant_msg.stream_token(message)
+
+        docs.extend(file_docs)
+
+    message = (
+        f"\n\nThe documents have been successfully uploaded "
+        f"and indexed. You can now ask questions about "
+        f"the content of the files."
+    )
+    await create_session_retriever(user, docs)
+    await assistant_msg.stream_token(message)
 
 
 @cl.on_message
 async def on_message(msg: cl.Message):
-    print("The user sent: ", msg.content)
+    logger.info(f"Received message: {msg.content}")
     identifier = cl.context.session.user.identifier
+    
+    if msg.elements:
+        await create_retriever_from_pdfs(identifier, msg.elements)
     
     assistant_msg = cl.Message(content="")
 

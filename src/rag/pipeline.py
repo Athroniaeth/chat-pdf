@@ -84,27 +84,6 @@ def _get_session_retriever(client: str) -> VectorStoreRetriever:
     return retriever
 
 
-async def create_session_retriever(client: str, filepath: str):
-    """Create a client for processing the PDF document."""
-    global stores_retriever
-    logger.info(f"Creating a new client with ID: {client}")
-
-    if client in stores_retriever:
-        logger.warning(f"Client '{client}' already exists in stores. Erasing it.")
-
-    docs = await _load_document(filepath)
-    chunks = await _split_document(docs)
-    vectorstore = await _create_vectorstore(chunks)
-    retriever = _get_retriever(vectorstore)
-    history = _get_or_create_session_history(client)
-
-    # Create a new retriever and history for the client
-    stores_retriever[client] = retriever
-    stores_history[client] = history
-
-    return client
-
-
 def _format_docs(docs: list[Document]) -> str:
     """Format the documents into a string."""
     return "\n---\n".join([doc.page_content for doc in docs])
@@ -114,7 +93,7 @@ def _get_retriever(vectorstore: FAISS) -> VectorStoreRetriever:
     return vectorstore.as_retriever(search_type="similarity", k=4)
 
 
-async def _load_document(pdf_path: str) -> Sequence[Document]:
+async def load_document(pdf_path: str) -> Sequence[Document]:
     loader = PyPDFLoader(pdf_path)
     docs = loader.aload()
     return await docs
@@ -129,6 +108,25 @@ async def _create_vectorstore(chunks: Sequence[Document]) -> FAISS:
     global embeddings
     return await FAISS.afrom_documents(chunks, embedding=embeddings)  # type: ignore
 
+
+async def create_session_retriever(client: str, docs: List[Document]) -> str:
+    """Create a client for processing the PDF document."""
+    global stores_retriever
+    logger.info(f"Creating a new client with ID: {client}")
+
+    if client in stores_retriever:
+        logger.warning(f"Client '{client}' already exists in stores. Erasing it.")
+
+    chunks = await _split_document(docs)
+    vectorstore = await _create_vectorstore(chunks)
+    retriever = _get_retriever(vectorstore)
+    history = _get_or_create_session_history(client)
+
+    # Create a new retriever and history for the client
+    stores_retriever[client] = retriever
+    stores_history[client] = history
+
+    return client
 
 async def run(client: str, query: str):
     history = _get_or_create_session_history(client)
