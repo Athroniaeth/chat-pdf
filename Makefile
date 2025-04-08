@@ -32,4 +32,4 @@ update-prod:
 # Check deployment status
 .PHONY: check-prod
 check-prod:
-	@ssh $(SSH_USER)@$(SSH_HOST) "cd $(PROJECT_DIR) && docker compose ps"
+	@ssh $(SSH_USER)@$(SSH_HOST) "cd $(PROJECT_DIR) && sudo docker compose ps"

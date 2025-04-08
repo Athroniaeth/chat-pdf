@@ -21,6 +21,8 @@ DATABASE_URL = os.environ.get(
 
 @cl.data_layer
 def get_data_layer():
+    # Todo: Add ping check to the database
+    logger.info(f"Connecting to database: {DATABASE_URL}")
     return SQLAlchemyDataLayer(conninfo=DATABASE_URL)
 
 

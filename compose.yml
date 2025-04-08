@@ -8,7 +8,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./data/db:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U chainlit -d chainlitdb" ]
@@ -22,6 +21,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://chainlit:chainlitpassword@postgres:5432/chainlitdb
+    container_name: rag
     command: "uv run src/rag run --host ${HOST} --port ${PORT}"
     # Host the FastAPI application on port 8000
     ports:

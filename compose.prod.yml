@@ -5,14 +5,13 @@ services:
       POSTGRES_USER: chainlit
       POSTGRES_PASSWORD: chainlitpassword
       POSTGRES_DB: chainlitdb
-    ports:
-      - "5432:5432"
+    networks:
+      - traefik-network
     volumes:
-      - ./data/db:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U chainlit -d chainlitdb" ]
-      interval: 1s
+      interval: 2s
       timeout: 5s
       retries: 10
 
@@ -20,12 +19,17 @@ services:
     # Build the image from the Dockerfile in the current directory
     build: .
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://chainlit:chainlitpassword@postgres:5432/chainlitdb
     container_name: rag
     command: "uv run src/rag run --host ${HOST} --port ${PORT}"
     # Host the FastAPI application on port 8000
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - traefik-network
     labels:
